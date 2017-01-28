@@ -1,0 +1,19 @@
+
+var a: String  = "348"
+var b: Int = 7878 + 10000000
+print(a)
+
+
+def f(i: Int, j: Int, l: String): Void
+
+	var fa: Int = 100
+	var fb: Int = b
+	print(fb)
+	
+	print(fb)
+	
+end
+
+f(10, 10, "a")
+
+
