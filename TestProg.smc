@@ -1,6 +1,52 @@
 
-var a: String  = "348"
+var a: String  = ""
 var b: Int = 7878 + 10000000
+
+//var msg: String = "WTF! its working"
+
+d = a
+
+print("")
+
+
+if 5 > 41
+	print("IF")
+else
+	print("else")
+	print(b + 1 + 1)
+end
+
+/*
+var i: Int = 10
+while i > 0
+	print(i)
+	i = i - 1
+end
+
+var isPrime: Int = 1
+var n: Int = 97
+
+i = 2
+
+while i < (n-1)
+
+	if n%i == 0
+		isPrime = 0
+	end	
+
+	print(n%i)
+	i = i+1
+
+end
+
+if isPrime == 1
+	print("Prime")
+else
+	print("Not Prime")
+end
+
+
+
 print(a)
 
 
@@ -14,6 +60,12 @@ def f(i: Int, j: Int, l: String): Void
 	
 end
 
+if 100 > 50
+	print("Hello")
+end
+
 f(10, 10, "a")
+*/
+
 
 

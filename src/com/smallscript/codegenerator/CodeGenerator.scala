@@ -11,8 +11,9 @@ import scala.Option
 //import com.sun.org.apache.bcel.internal.generic.INVOKESTATIC
 
 
-class CodeGenerator(val fileName: String){
-  
+class CodeGenerator(var fileName: String){
+    fileName = fileName.substring(0, fileName.lastIndexOf("."))
+        
     val classFile = new ClassFile(fileName, Option.empty)
     var mainCh: CodeHandler = null
     var staticCh: CodeHandler = null

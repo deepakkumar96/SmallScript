@@ -201,6 +201,7 @@ class SymanticAnalyser(val smt: SymbolTable, val errReporter: ErrorReporter)
     
     if(idValue != null && !(idType == TypeConverter.classToType(idValue.getClass))){
       /* (*)Add Line Number Later  */
+      println("ERROR")
       errReporter.addError(new CompilationError("Expression " + idValue + " is not valid for type " + idType))
     }
     else{
@@ -363,7 +364,7 @@ class SymanticAnalyser(val smt: SymbolTable, val errReporter: ErrorReporter)
     
     
     /* Parameters */
-    println("\tParameters : " + node.jjtGetChild(1).jjtGetNumChildren())
+    //println("\tParameters : " + node.jjtGetChild(1).jjtGetNumChildren())
     var params: Array[Type] = null
     
     if(node.jjtGetNumChildren() > 3){
@@ -381,7 +382,7 @@ class SymanticAnalyser(val smt: SymbolTable, val errReporter: ErrorReporter)
     else
       totalChilds = 3
      
-    println("FFFFFFFFFFFF")
+    //println("FFFFFFFFFFFF")
     /* Type Of Functions */
     val fType = node.jjtGetChild(totalChilds-2).jjtAccept(this, data).asInstanceOf[String]
     

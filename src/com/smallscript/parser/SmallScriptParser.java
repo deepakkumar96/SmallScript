@@ -8,11 +8,10 @@ import com.smallscript.codegenerator.*;
 public class SmallScriptParser/*@bgen(jjtree)*/implements SmallScriptParserTreeConstants, SmallScriptParserConstants {/*@bgen(jjtree)*/
   protected static JJTSmallScriptParserState jjtree = new JJTSmallScriptParserState();public static void main(String args []) throws java.io.IOException
   {
-    System.out.println("Reading from " + args[0]);
-    System.out.println();
+    //System.out.println("Reading from " + args[0]);    //System.out.println();
+    if(args.length <= 0) System.exit(0);
     SmallScriptParser parser = new SmallScriptParser(new java.io.FileInputStream(args[0]));
-        System.out.println(":");
-    try
+        try
     {
           SimpleNode rootNode = parser.start();
 
@@ -37,7 +36,7 @@ public class SmallScriptParser/*@bgen(jjtree)*/implements SmallScriptParserTreeC
           else {
                 //generating bytecodes
 
-                CodeGenerator codeGenerator = new CodeGenerator("TestProg");
+                CodeGenerator codeGenerator = new CodeGenerator(args[0]);
                 CodeGeneratorVisitor codeVisitor = new CodeGeneratorVisitor(smt, codeGenerator);
                 rootNode.jjtAccept(codeVisitor, null);
                 codeGenerator.saveAndWrite();
@@ -45,8 +44,7 @@ public class SmallScriptParser/*@bgen(jjtree)*/implements SmallScriptParserTreeC
 
           //simply dumping all nodes
 
-      rootNode.dump("");
-      //System.out.println("Thank you.");
+      //rootNode.dump("");      //System.out.println("Thank you.");
       if(!errReporter.containsError())
         System.out.println("Compiled Successfully.");
     }

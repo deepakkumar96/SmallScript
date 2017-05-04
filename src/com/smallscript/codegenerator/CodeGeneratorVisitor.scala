@@ -21,6 +21,10 @@ import cafebabe.AbstractByteCodes._
 class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends SmallScriptParserVisitor{
   smt = new SymbolTable()
   val stack = new java.util.Stack[Object]
+  var labelCounter = 0;
+  var whileLoopLabelCounter = 0
+  
+  def nextWhileLoopLabelCounter() = { whileLoopLabelCounter += 1; whileLoopLabelCounter}
   
   
   
@@ -71,19 +75,14 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
     var exprRight = node.jjtGetChild(1).jjtAccept(this, data)
     
     if(exprLeft.isInstanceOf[Integer])
-      cg.mainCh << IMUL
+      cg.mainCh << IADD
     else if(exprLeft.isInstanceOf[String]){
       //string concat 
     }
-    println("::ADD")    
+    //println("::ADD")    
     exprLeft
   }
   
-  def visit(node: com.smallscript.parser.ASTDblEqualNode,data: Object): Object = data
-  def visit(node: com.smallscript.parser.ASTGENode,data: Object): Object = data
-  def visit(node: com.smallscript.parser.ASTLENode,data: Object): Object = data
-  def visit(node: com.smallscript.parser.ASTGTNode,data: Object): Object = node.childrenAccept(this, data)
-  def visit(node: com.smallscript.parser.ASTLTNode,data: Object): Object = data
   
   
   
@@ -101,19 +100,111 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
   
   
   def visit(node: com.smallscript.parser.ASTLoopStatement,data: Object): Object = data
-  def visit(node: com.smallscript.parser.ASTWhileStatement,data: Object): Object = data
-  def visit(node: com.smallscript.parser.ASTElse,data: Object): Object = node.childrenAccept(this, data)
+  def visit(node: com.smallscript.parser.ASTWhileStatement,data: Object): Object = {
+    println("\nWHILE")
+    val WHILE_START_LABEL = "WHILE_START" + nextWhileLoopLabelCounter()
+    val WHILE_CODE_LABEL = "WHILE_CODE" + nextWhileLoopLabelCounter()
+    val WHILE_END_LABEL = "WHILE"+ nextWhileLoopLabelCounter()
+    
+    cg.mainCh << Label(WHILE_START_LABEL)
+    
+    node.jjtGetChild(0).jjtAccept(this, WHILE_CODE_LABEL)
+    
+    cg.mainCh << Goto(WHILE_END_LABEL)
+    
+    cg.mainCh << Label(WHILE_CODE_LABEL)
+    
+    for(i <- 1 to node.jjtGetNumChildren()-1){
+       node.jjtGetChild(i).jjtAccept(this, data)
+    }
+    
+    cg.mainCh << Goto(WHILE_START_LABEL)
+    
+    cg.mainCh << Label(WHILE_END_LABEL)
+    
+    data
+  }
+  
   
   /* If Statements */
   def visit(node: com.smallscript.parser.ASTIfStatement,data: Object): Object = {
     smt.saveStackIndex()
     smt.createNewScope()
-    node.childrenAccept(this, data)
+    
+    val IF_LABEL = "IF_LABEL" + {labelCounter += 1; labelCounter};
+    val ELSE_LABEL = "ELSE_LABEL" + {labelCounter += 1; labelCounter};
+    val END_IF_LABEL = "END_IF_LABEL" + {labelCounter += 1; labelCounter};
+    
+    node.jjtGetChild(0).jjtAccept(this, IF_LABEL)
+    
+    cg.mainCh << Goto(ELSE_LABEL)
+    cg.mainCh << Label(IF_LABEL)
+    
+    //Executing If statements
+    var cnt = 2
+    import scala.util.control.Breaks._
+    breakable{
+      for(i <- cnt to node.jjtGetNumChildren()){
+        if(node.jjtGetChild(i-1).isInstanceOf[ASTElse])  {
+          println("\nBREAKING")
+          break
+        }
+        else{
+          print()
+          for(j <- 0 to node.jjtGetChild(i-1).jjtGetNumChildren()-1){
+            node.jjtGetChild(i-1).jjtGetChild(j).jjtAccept(this, data);
+          }
+        }
+        cnt = i
+      }
+    }
+    cg.mainCh << Goto(END_IF_LABEL)
+    
+    cg.mainCh << Label(ELSE_LABEL)
+    //Else-Stmt
+    node.jjtGetChild(cnt).jjtAccept(this, data);
+    
+    cg.mainCh << Label(END_IF_LABEL)
+    
     smt.exitCurrentScope()
     smt.restoreStackIndex()
     data
   }
   
+  def visit(node: com.smallscript.parser.ASTElse,data: Object): Object = {
+    println("\nELSE : ")
+    node.childrenAccept(this, data)
+  }
+  
+  def visit(node: com.smallscript.parser.ASTDblEqualNode,data: Object): Object = {
+    node.childrenAccept(this, data)
+    cg.mainCh << If_ICmpEq(data.toString())
+    data
+  }
+  
+  def visit(node: com.smallscript.parser.ASTLTNode,data: Object): Object = {
+    node.childrenAccept(this, data)
+    cg.mainCh << If_ICmpLt(data.toString())
+    data
+  }
+  
+  def visit(node: com.smallscript.parser.ASTGENode,data: Object): Object = {
+    node.childrenAccept(this, data)
+    cg.mainCh << If_ICmpGe(data.toString())
+    data
+  }
+  
+  def visit(node: com.smallscript.parser.ASTLENode,data: Object): Object = {
+    node.childrenAccept(this, data)
+    cg.mainCh << If_ICmpLe(data.toString())
+    data
+  }
+  
+  def visit(node: com.smallscript.parser.ASTGTNode,data: Object): Object = {  
+    node.childrenAccept(this, data)
+    cg.mainCh << If_ICmpGt(data.toString())
+    data
+  }
   
   
   
@@ -259,7 +350,7 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
     cg.mainCh << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
     
     val expr = node.jjtGetChild(0).jjtAccept(this, data)
-    
+    println("PRINT:: " + expr)
     var exprType: String = null
     
     if(expr.isInstanceOf[Integer])
@@ -330,7 +421,7 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
   //Expression
   
   def visit(node: com.smallscript.parser.ASTexpression,data: Object): Object = {
-    //print("Expr : ")
+    //println("\nExpr : ")
     val exprValue = node.jjtGetChild(0).jjtAccept(this, data)
     return exprValue
   }
@@ -400,6 +491,7 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
   
   def visit(node: com.smallscript.parser.ASTNumber, data: Object): Object = {
     val num = Integer.parseInt(node.jjtGetValue.toString)
+    print("NUM :: "+num)
     cg.mainCh << Ldc(num)
     return  new Integer(num)
   }
@@ -419,8 +511,8 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
   //Function
   
   def visit(node: com.smallscript.parser.ASTFunction,data: Object): Object = {
-    println("::Function : ")
-    javax.swing.JOptionPane.showMessageDialog(null, "FUNCTION")
+    //println("::Function : ")
+    //javax.swing.JOptionPane.showMessageDialog(null, "FUNCTION")
     val mainCh = cg.mainCh
     
     smt.resetStackIndex()
@@ -447,7 +539,7 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
       }
       params(i) = paramDecl.getType
       paramDecl.setStackId(smt.nextStackIndex())
-      println("FFFFFFFFFF")
+      //println("FFFFFFFFFF")
       
       smt.put(paramDecl.getName, paramDecl)
     }
@@ -502,7 +594,7 @@ class CodeGeneratorVisitor(var smt: SymbolTable, val cg: CodeGenerator) extends 
     
     smt.dump()
     smt.exitCurrentScope()
-    println("djfhjahflsdjfljsdfioewjfiji")
+    ///println("djfhjahflsdjfljsdfioewjfiji")
     return data
   }
   

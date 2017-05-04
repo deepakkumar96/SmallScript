@@ -14,8 +14,8 @@ import com.smallscript.symboltable.*;
 import com.smallscript.errorreporting.*;
 import com.smallscript.codegenerator.*;
 
-public class SmallScriptParser{  public static void main(String args []) throws java.io.IOException  {    System.out.println("Reading from " + args[0]);    System.out.println();    SmallScriptParser parser = new SmallScriptParser(new java.io.FileInputStream(args[0]));	System.out.println(":");
-    try    {
+public class SmallScriptParser{  public static void main(String args []) throws java.io.IOException  {    //System.out.println("Reading from " + args[0]);    //System.out.println();
+    if(args.length <= 0) System.exit(0);    SmallScriptParser parser = new SmallScriptParser(new java.io.FileInputStream(args[0]));	try    {
 	  SimpleNode rootNode = parser.start();
       
       SymbolTable smt = new SymbolTable();
@@ -38,14 +38,14 @@ public class SmallScriptParser{  public static void main(String args []) throw
 	  else {
 	  	//generating bytecodes
 	  	
-	  	CodeGenerator codeGenerator = new CodeGenerator("TestProg");
+	  	CodeGenerator codeGenerator = new CodeGenerator(args[0]);
 	  	CodeGeneratorVisitor codeVisitor = new CodeGeneratorVisitor(smt, codeGenerator);
 	  	rootNode.jjtAccept(codeVisitor, null);
 	  	codeGenerator.saveAndWrite();
 	  }
 	  
 	  //simply dumping all nodes
-            rootNode.dump("");      //System.out.println("Thank you.");
+            //rootNode.dump("");      //System.out.println("Thank you.");
       if(!errReporter.containsError())
       	System.out.println("Compiled Successfully.");    }    catch (Exception e)    {      System.out.println("Oops.");      System.out.println(e.getMessage());
       e.printStackTrace();    }  }}PARSER_END(SmallScriptParser)SKIP :{  " "| "\t"| "\n"| "\r"| < "//" (~[ "\n", "\r" ])*    (      "\n"    | "\r"    | "\r\n"    ) >| < "/*" (~[ "*" ])* "*"    (      ~[ "/" ] (~[ "*" ])* "*"    )*    "/" >}

@@ -1,475 +1,0 @@
-/**
- * JJTree template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
- */options
-{
-  static = true;
-  MULTI = true;
-  VISITOR = true;
-  //NODE_PACKAGE = "com.smallscript.parser.ast";
-  //JJTREE_OUTPUT_DIRECTORY = "com.smallscript.parser.ast";
-}
-PARSER_BEGIN(SmallScriptParser)package com.smallscript.parser;
-import com.smallscript.symanticanalyser.*;
-import com.smallscript.symboltable.*;
-import com.smallscript.errorreporting.*;
-import com.smallscript.codegenerator.*;
-
-public class SmallScriptParser{  public static void main(String args []) throws java.io.IOException  {    System.out.println("Reading from " + args[0]);    System.out.println();    SmallScriptParser parser = new SmallScriptParser(new java.io.FileInputStream(args[0]));	System.out.println(":");
-    try    {
-	  SimpleNode rootNode = parser.start();
-      
-      SymbolTable smt = new SymbolTable();
-      ErrorReporter errReporter = new ErrorReporter();
-
-	  //PreScaning All The Declared Function
-	  //FunctionAnalyser functionAnalyser = new FunctionAnalyser(smt, errReporter);
-	  //rootNode.jjtAccept(functionAnalyser, null);
-
-	  //smt.dump();
-      
-	  //symantic analysis
-      SymanticAnalyser symanticAnalyser = new SymanticAnalyser(smt, errReporter);	  rootNode.jjtAccept(symanticAnalyser, null);
-	  
-	  //smt.dump();
-	  
-	  if(errReporter.containsError()) {
-			errReporter.dumpErrors(System.out);
-	  }
-	  else {
-	  	//generating bytecodes
-	  	
-	  	CodeGenerator codeGenerator = new CodeGenerator("TestProg");
-	  	CodeGeneratorVisitor codeVisitor = new CodeGeneratorVisitor(smt, codeGenerator);
-	  	rootNode.jjtAccept(codeVisitor, null);
-	  	codeGenerator.saveAndWrite();
-	  }
-	  
-	  //simply dumping all nodes
-            //rootNode.dump("");      //System.out.println("Thank you.");
-      if(!errReporter.containsError())
-      	System.out.println("Compiled Successfully.");    }    catch (Exception e)    {      System.out.println("Oops.");      System.out.println(e.getMessage());
-      e.printStackTrace();    }  }}PARSER_END(SmallScriptParser)SKIP :{  " "| "\t"| "\n"| "\r"| < "//" (~[ "\n", "\r" ])*    (      "\n"    | "\r"    | "\r\n"    ) >| < "/*" (~[ "*" ])* "*"    (      ~[ "/" ] (~[ "*" ])* "*"    )*    "/" >}
-
-TOKEN: //statements
-{
-		<IF : "if">
-	|	<ELSE: "else"> 
-	| 	<OCBR: "{">
-	| 	<CCBR: "}">
-	|	<END:	"end">
-	| 	<WHILE:	"while">
-	| 	<LOOP:	"loop">
-	| 	<LT:	"<">
-	| 	<GT:	">">
-	| 	<LE:	"<=">	
-	| 	<GE:	">=">
-	| 	<DEF:	"def">
-	| 	<COLON:	":">
-	| 	<RETURN: "return">
-	| 	<BREAK: "break">
-	| 	<IMPORT: "import">
-	| 	<DOT: ".">
-	| 	<VOID:	"Void">
-}
-
-TOKEN: /* TYPES */
-{
-		<INT: "Int">
-	|
-		<STRING: "String">
-	| 	<CHAR: "Char">
-	| 	<ARRAY_TYPE: ((<INT>|<CHAR>|<STRING>) "[]")>
-}
-
-TOKEN: //Operators
-{
-		<DIVIDE: "/">
-	|	<MULTIPLY: "*">
-	|	<PLUS: "+">
-	|	<MINUS: "-">
-	| 	<MOD: "%">
-	|   <DBL_EQUAL: "==" >
-}	
-
-TOKEN:
-{
-		<NUMBER: (["0"-"9"])+ >
-	|	<PRINT: "print"> 
-	|	<EQUAL:	"=" > 
-	|   <VAR: "var" >
-	|   <VAL: "val" >
-	//|	<VARIABLE: (["a"-"z"])+>
-	| 	<OPEN_PARAN: "(">
-	| 	<CLOSE_PARAN: ")">
-	| 	<COMMA: ",">
-	| 	<OPEN_SQ_BRAC: "[">
-	| 	<CLOSE_SQ_BRAC: "]">
-	| 	<ARROW : "->">
-	| 	<EQUAL_ARROW : "=>">
-	
-}
-/*TOKEN :{  < INTEGER_LITERAL :    < DECIMAL_LITERAL > ([ "l", "L" ])?  | < HEX_LITERAL > ([ "l", "L" ])?  | < OCTAL_LITERAL > ([ "l", "L" ])?     >| < #DECIMAL_LITERAL : [ "1"-"9" ] ([ "0"-"9" ])* >| < #HEX_LITERAL : "0" [ "x", "X" ] ([ "0"-"9", "a"-"f", "A"-"F" ])+ >| < #OCTAL_LITERAL : "0" ([ "0"-"7" ])* >}*/
-TOKEN : /* IDENTIFIERS And Literals */{
-   <CHAR_LITERAL: ("'" <CHARS> "'")>
- | 
-   < IDENTIFIER :
-    < LETTER >
-    (
-      < LETTER >
-    | < INTEGER >
-    )* >
-| 
-  <STRING_LITERAL: "\"" (<CHARS>)* "\"" >
-        | <CHARS: (~["\""] | "\\" (["n","r","\\","\'","\""])) >
- | < #LETTER : [ "_", "a"-"z", "A"-"Z", "$" ] >| < INTEGER : [ "0"-"9" ] >}
-
-
-
-ASTstart start() #start:{}
-{
-  (statement())*
-  { return jjtThis; }
-}
- 
-void statement() #Statement:
-{}
-{
-  	
-	LOOKAHEAD(2) 
-	function_call()
-	| 
-	import_stmt()
-	| 
-	break_stmt()
- 	| 
-    LOOKAHEAD(2) 
-  	var_delc()
- 	|
- 	val_delc() 
-	| 
-	assign()
-	|
-	if_stmt()
-	|
-	while_stmt()
-	| 
-	function()
-	|
-	LOOKAHEAD(print())
-	print()
-	| 
-	return_stmt()
-	|
-	loop_stmt()
-	|
-	//LOOKAHEAD(3)
-	//array_assgn()
-	//| 
-	//#array_access() 
-	//#| 
-	LOOKAHEAD(array_literal())
-	array_literal()
-	
-	
- 
-	
-}
-
-void import_stmt() #Import:
-{}
-{
-	<IMPORT> string_literal()
-}
-
-
-void char_literal() #CharLiteral:
-{
-	Token t;
-}
-{
-	t = <CHAR_LITERAL>{jjtThis.value = t.image;}
-}
-
-void break_stmt() #Break:
-{}
-{
-	<BREAK>
-}
-
-void var_delc() #VAR_DELC:
-{}
-{
-	<VAR> identifier() <COLON> type() [ <EQUAL> (expression() | array_literal()) ]
-}
-
-void val_delc() #VAL_DELC:
-{}
-{
-	<VAL> identifier() <COLON> type() [ <EQUAL> (expression() | array_literal()) ]
-}
-
-void arg_delc() #Arg_DELC:
-{ }
-{
-	identifier() <COLON> type()
-}
-
-void assign() # Assignment:
-{}
-{
-	identifier() <EQUAL> expression()
-}
-
-void print() #Print :
-{}
-{
-	<PRINT> <OPEN_PARAN> expression() <CLOSE_PARAN>
-}
-
-void identifier() :
-{
-	Token t;
-}
-{
-	t=<IDENTIFIER>
-	{
-		//jjtThis.data.put("name",token.image);
-		jjtThis.value = t.image;
-	}#Variable
-}
-
-void if_stmt() #IfStatement:
-{
-	//Token t;
-}
-{
-	(
-	  <IF>
-
-		expression() //t = <STRING_LITERAL>{jjtThis.value = t.image;}
-	
-		(statement())*
-	)
-	[
-		LOOKAHEAD(1) 
-	  	<ELSE>
-			(statement())*
-	]#Else
-	<END>
-}
-
-/* Looping Statement */
-
-void while_stmt() #WhileStatement:
-{}
-{
-	<WHILE> expression() (statement())* <END>
-}
-
-void loop_stmt() #LoopStatement:
-{
-	
-}
-{
-	<LOOP> (statement())* <END>
-}
-
-
-void function() #Function:
-{
-	Token t;
-}
-{
-	<DEF> identifier() <OPEN_PARAN> [ params() ] <CLOSE_PARAN> <COLON> type()
-		statment_block()
-	<END>
-}
-
-void params() #Parameters:
-{}
-{
-	param() (<COMMA> param())*
-}
-
-void param() #Parameter:
-{ }
-{
-	var_delc() | val_delc() | arg_delc()
-}
-
-//parameters can be stored in list
-void function_call() #FunctionCall:
-{
-	//Token t;
-}
-{
-	identifier() <OPEN_PARAN> (expr_params())* <CLOSE_PARAN>
-}
-/*
-void function_name_id() #FunctionNameId:
-{}
-{
-	identifier() [ "." identifier() ]
-}*/
-
-void expr_params() #ExpressionParameters:
-{}
-{
-	expression() (<COMMA> expression())*
-}
-
-
-
-void return_stmt() #ReturnStatement:
-{
-	Token t;
-}
-{
-	<RETURN> expression() 
-}
-
-void statment_block()# StatementBlock:
-{}
-{
-	(statement())*
-}
-
-void type() #Type:
-{
-	Token t;
-}
-{
-	t = <CHAR> { jjtThis.value = t.image; }
-	|
-	t = <INT> { jjtThis.value = t.image; }
-	|
-	t = <STRING> { jjtThis.value = t.image; }
-	|
-	t = <ARRAY_TYPE> { jjtThis.value = t.image; }
-	|
-	t = <VOID> { jjtThis.value = t.image; } 
-}
-
-
-Node expression():
-{}
-{
-	//additiveExpression()
-	RelationalExpression()
-	{
-	  return jjtThis;
-	}
-}
-
-/** Relational expression. */
-void RelationalExpression() #void :
-{}
-{
-  AdditiveExpression()
-  (
-    "<" AdditiveExpression() #LTNode(2)
-   |
-    ">" AdditiveExpression() #GTNode(2)
-   |
-    "<=" AdditiveExpression() #LENode(2)
-   |
-    ">=" AdditiveExpression() #GENode(2)
-   |
-    <DBL_EQUAL> AdditiveExpression() #DblEqualNode(2)
-   
-  )*
-}
-
-void AdditiveExpression()#void:
-{}
-{
-	multiplicativeExpression()
-	(<PLUS> multiplicativeExpression()#AddExpr(2)
-	 | <MINUS> multiplicativeExpression()#SubractExpr(2)
-	)*
-}
-
-void multiplicativeExpression()#void :
-{}
-{
-	unaryExpression()
-	(
-	 	<MULTIPLY> unaryExpression()#MultiplyExpr(2)
-	 |  <DIVIDE> unaryExpression()#DivideExpr(2)
-	 |  <MOD> unaryExpression()#ModuloExpr(2)
-	)*
-}
-void unaryExpression():
-{}
-{
-	<MINUS> numberExpression()#NegateExpr(1)
-	|
-	LOOKAHEAD(2)
-	numberExpression()
-	|
-	string_literal()
-	|
-	char_literal()
-	| 
-	array_access()
-	|
-	<OPEN_PARAN> expression() <CLOSE_PARAN>  
-}
-
-// Array Related Grammar
-
-void array_literal() #ArrayLiteral:
-{
-	Node currentExpr;
-}
-{
-	<OPEN_SQ_BRAC> [ currentExpr = expression() (<COMMA> currentExpr = expression() {jjtThis.literals.add(currentExpr);})* ] <CLOSE_SQ_BRAC>
-}
-
-void array_access() #ArrayAccess:
-{}
-{
-	identifier() <OPEN_SQ_BRAC> numberExpression() <CLOSE_SQ_BRAC>
-}
-
-// index number is represented by node.value
-void array_assgn() #ArrayAssignment:
-{
-	Token t;
-}
-{
-	identifier() <OPEN_SQ_BRAC> t=<NUMBER> {jjtThis.value = t.image;} <CLOSE_SQ_BRAC> <EQUAL> expression()
-}
-
-void string_literal() #StringLiteral :
-{
-	Token t;
-}
-{
-	t = <STRING_LITERAL>{jjtThis.value = t.image;}
-}
-
-void numberExpression() :
-{
-	Token t;
-}
-{
-	t=<NUMBER> {jjtThis.value = t.image; } #Number
-	|
-	t=<IDENTIFIER> { jjtThis.value = t.image; } #VarialbleValue
-	 
-}
-/*
-void numberExpression() :
-{
-}
-{
-	<NUMBER>
-	{ 
-		jjtThis.data.put("value",new Integer(Integer.parseInt(token.image)));
-	}#Number
-	| <VARIABLE>
-	{
-		jjtThis.data.put("name",token.image);
-	}#VariableValue
-}*/
